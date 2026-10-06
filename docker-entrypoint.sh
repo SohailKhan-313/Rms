@@ -19,6 +19,9 @@ cat <<EOF > /etc/apache2/sites-available/000-default.conf
     ServerAdmin webmaster@localhost
     DocumentRoot /var/www/html
 
+    UseCanonicalName Off
+    UseCanonicalPhysicalPort Off
+
     # Route /RMS/... paths seamlessly to /var/www/html/...
     Alias /RMS /var/www/html
 
