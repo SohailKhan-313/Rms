@@ -2,8 +2,8 @@
 RewriteEngine On
 Options +FollowSymLinks -Indexes
 
-# If root URL is requested, redirect to RMS public entry point
-RewriteRule ^$ /RMS/public/index.php [L,R=302]
+# If root URL is requested, internally serve public/index.php without external redirect
+RewriteRule ^$ public/index.php [L]
 
 # Ensure UTF-8 default charset
 AddDefaultCharset UTF-8
