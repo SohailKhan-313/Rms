@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["php82", "php82Extensions.mysqli", "php82Extensions.pdo_mysql", "php82Extensions.gd", "php82Extensions.zip"]
+
+[phases.install]
+cmds = ["composer install --no-dev --optimize-autoloader || true"]
+
+[start]
+cmd = "php config/init_db.php 2>&1 & exec php -S 0.0.0.0:$PORT router.php"
