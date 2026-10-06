@@ -52,12 +52,18 @@ if (!$conn) {
         $dbname = get_rms_db_env(['MYSQLDATABASE', 'DB_NAME', 'MYSQL_DATABASE'], 'railway');
 
         try {
-            $c = @new mysqli($host, $user, $pass, "", $port);
+            $c = @new mysqli($host, $user, $pass, $dbname, $port);
             if ($c && !$c->connect_error) {
-                @$c->query("CREATE DATABASE IF NOT EXISTS `$dbname` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-                if (@$c->select_db($dbname)) {
-                    $c->set_charset("utf8mb4");
-                    $conn = $c;
+                $c->set_charset("utf8mb4");
+                $conn = $c;
+            } else {
+                $c = @new mysqli($host, $user, $pass, "", $port);
+                if ($c && !$c->connect_error) {
+                    @$c->query("CREATE DATABASE IF NOT EXISTS `$dbname` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+                    if (@$c->select_db($dbname)) {
+                        $c->set_charset("utf8mb4");
+                        $conn = $c;
+                    }
                 }
             }
         } catch (Throwable $e) {}
