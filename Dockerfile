@@ -15,8 +15,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && docker-php-ext-install -j$(nproc) mysqli pdo_mysql gd zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Enable Apache rewrite, headers, and alias modules
-RUN a2enmod rewrite headers alias
+# Fix Railway AH00534 MPM conflict and enable required Apache modules
+RUN rm -f /etc/apache2/mods-enabled/mpm_*.load /etc/apache2/mods-enabled/mpm_*.conf \
+    && a2enmod mpm_prefork rewrite headers alias
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -38,6 +39,6 @@ COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN sed -i 's/\r$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
 
 # Default port
-EXPOSE 80
+EXPOSE 8080 80
 
 ENTRYPOINT ["/docker-entrypoint.sh"]

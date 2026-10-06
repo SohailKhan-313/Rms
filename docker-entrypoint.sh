@@ -4,12 +4,16 @@
 PORT="${PORT:-80}"
 echo "==> [RMS] Starting RMS container on port: ${PORT}"
 
-# 1. Configure Apache to listen on $PORT
+# 1. Resolve Railway AH00534 duplicate MPM error (strictly ensure only mpm_prefork is active)
+rm -f /etc/apache2/mods-enabled/mpm_*.load /etc/apache2/mods-enabled/mpm_*.conf 2>/dev/null || true
+a2enmod mpm_prefork >/dev/null 2>&1 || true
+
+# 2. Configure Apache to listen on $PORT
 cat <<EOF > /etc/apache2/ports.conf
 Listen ${PORT}
 EOF
 
-# 2. Configure VirtualHost for $PORT with DocumentRoot and Alias /RMS
+# 3. Configure VirtualHost for $PORT with DocumentRoot and Alias /RMS
 cat <<EOF > /etc/apache2/sites-available/000-default.conf
 <VirtualHost *:${PORT}>
     ServerAdmin webmaster@localhost
@@ -29,15 +33,15 @@ cat <<EOF > /etc/apache2/sites-available/000-default.conf
 </VirtualHost>
 EOF
 
-# 3. Enable site and test configuration
+# 4. Enable site and test configuration
 a2ensite 000-default.conf >/dev/null 2>&1
 apache2ctl configtest || true
 
-# 4. Trigger DB migration in background after container starts
+# 5. Trigger DB migration in background after container starts
 (
     sleep 3
     php /var/www/html/config/init_db.php 2>&1 || true
 ) &
 
-echo "==> [RMS] Launching Apache Web Server..."
+echo "==> [RMS] Launching Apache Web Server on port ${PORT}..."
 exec apache2-foreground
