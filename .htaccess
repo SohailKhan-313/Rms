@@ -1,0 +1,14 @@
+# RMS Apache Configuration & URL Router
+RewriteEngine On
+Options +FollowSymLinks -Indexes
+
+# If root URL is requested, redirect to RMS public entry point
+RewriteRule ^$ /RMS/public/index.php [L,R=302]
+
+# Ensure UTF-8 default charset
+AddDefaultCharset UTF-8
+
+# Security: Deny direct access to sensitive configuration files
+<FilesMatch "^(composer\.(json|lock)|schema\.sql|\.env|\.git.*)$">
+    Require all denied
+</FilesMatch>

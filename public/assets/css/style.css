@@ -1,0 +1,472 @@
+/**
+ * RMS (Restaurant Management System) - Global Design System & Stylesheet
+ * Modern, clean, responsive design tokens and utility classes
+ */
+
+:root {
+  /* Brand Palette */
+  --rms-primary: #4f46e5;
+  --rms-primary-hover: #4338ca;
+  --rms-primary-light: #eef2ff;
+  --rms-secondary: #0ea5e9;
+  --rms-secondary-hover: #0284c7;
+  --rms-accent: #f59e0b;
+  --rms-success: #10b981;
+  --rms-success-hover: #059669;
+  --rms-danger: #ef4444;
+  --rms-danger-hover: #dc2626;
+  --rms-warning: #f59e0b;
+  --rms-info: #06b6d4;
+
+  /* Neutrals & Dark/Light */
+  --rms-bg: #f8fafc;
+  --rms-surface: #ffffff;
+  --rms-border: #e2e8f0;
+  --rms-border-hover: #cbd5e1;
+  --rms-text-main: #0f172a;
+  --rms-text-muted: #64748b;
+  --rms-text-light: #94a3b8;
+
+  /* POS Theme Specific */
+  --pos-sidebar-width: 420px;
+  --pos-header-height: 64px;
+  --pos-card-bg: #ffffff;
+  --pos-card-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+  --pos-card-hover: 0 10px 25px rgba(79, 70, 229, 0.12);
+
+  /* Shadows */
+  --rms-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --rms-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.07);
+  --rms-shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --rms-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  /* Border Radii */
+  --rms-radius-sm: 6px;
+  --rms-radius-md: 10px;
+  --rms-radius-lg: 16px;
+  --rms-radius-xl: 24px;
+  --rms-radius-full: 9999px;
+
+  /* Transitions */
+  --rms-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --rms-transition-bounce: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Base resets & typography */
+body {
+  font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: var(--rms-text-main);
+  background-color: var(--rms-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: var(--rms-radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Global Cards */
+.rms-card {
+  background: var(--rms-surface);
+  border: 1px solid var(--rms-border);
+  border-radius: var(--rms-radius-lg);
+  box-shadow: var(--rms-shadow-sm);
+  transition: var(--rms-transition);
+}
+.rms-card:hover {
+  box-shadow: var(--rms-shadow-md);
+}
+.rms-card-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--rms-border);
+  background: transparent;
+  font-weight: 600;
+}
+.rms-card-body {
+  padding: 1.25rem;
+}
+
+/* Menu Thumbnail Image in Tables & Catalogs */
+.menu-thumb {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: var(--rms-radius-sm);
+  border: 1px solid var(--rms-border);
+  box-shadow: var(--rms-shadow-sm);
+  transition: var(--rms-transition);
+}
+.menu-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: var(--rms-shadow-md);
+}
+
+.menu-thumb-lg {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: var(--rms-radius-md);
+}
+
+/* Modern Badges */
+.rms-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35em 0.75em;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: var(--rms-radius-full);
+  letter-spacing: 0.02em;
+}
+.rms-badge-primary {
+  background-color: var(--rms-primary-light);
+  color: var(--rms-primary);
+}
+.rms-badge-success {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+.rms-badge-warning {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+.rms-badge-danger {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* POS Terminal Nav Link Highlight in Sidebar */
+.nav-link.pos-active-badge {
+  background: linear-gradient(135deg, var(--rms-primary) 0%, #6366f1 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+  font-weight: 600;
+  border-radius: var(--rms-radius-md);
+  margin: 4px 8px;
+}
+.nav-link.pos-active-badge i {
+  color: #ffffff !important;
+}
+
+/* Modern Buttons */
+.btn-rms-primary {
+  background: var(--rms-primary);
+  color: #ffffff;
+  border: none;
+  font-weight: 600;
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--rms-radius-md);
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+  transition: var(--rms-transition);
+}
+.btn-rms-primary:hover {
+  background: var(--rms-primary-hover);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+}
+.btn-rms-primary:active {
+  transform: translateY(0);
+}
+
+.btn-rms-success {
+  background: var(--rms-success);
+  color: #ffffff;
+  border: none;
+  font-weight: 600;
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--rms-radius-md);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+  transition: var(--rms-transition);
+}
+.btn-rms-success:hover {
+  background: var(--rms-success-hover);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+
+/* Modern Data Table Styling */
+.rms-table-wrapper {
+  background: var(--rms-surface);
+  border-radius: var(--rms-radius-lg);
+  border: 1px solid var(--rms-border);
+  overflow: hidden;
+  box-shadow: var(--rms-shadow-sm);
+}
+.rms-table-wrapper table {
+  margin-bottom: 0;
+}
+.rms-table-wrapper table th {
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.85rem 1rem;
+  border-bottom: 2px solid var(--rms-border);
+}
+.rms-table-wrapper table td {
+  padding: 0.85rem 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--rms-border);
+  color: var(--rms-text-main);
+  font-size: 0.95rem;
+}
+.rms-table-wrapper table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+/* Micro-animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(79, 70, 229, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+}
+
+.anim-fade-in {
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+.pulse-active {
+  animation: pulseGlow 2s infinite;
+}
+
+/* Responsive Container Utilities */
+@media (max-width: 768px) {
+  .rms-card-body {
+    padding: 1rem;
+  }
+}
+
+/* ============================================================
+   RMS SYSTEM-WIDE HIGH-DEFINITION PRINT STYLES
+   Ensures clean, beautiful, official printouts for Daily Expenses,
+   Sales Reports, Customer Ledgers, Supplier Invoices, and Orders.
+   ============================================================ */
+.print-only {
+  display: none !important;
+}
+
+@media print {
+  /* Hide all app chrome, navigation, buttons, and sidebars */
+  .app-sidebar,
+  .app-header,
+  .app-footer,
+  .breadcrumb,
+  .btn,
+  button,
+  form,
+  .modal,
+  .alert,
+  .nav,
+  .sidebar-wrapper,
+  .pos-mobile-cart-bar,
+  .pos-header-bar,
+  .dataTables_filter,
+  .dataTables_length,
+  .dataTables_paginate,
+  .dataTables_info,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Reset main layout for full-width printout */
+  body, html {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+    line-height: 1.4 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .app-wrapper,
+  .app-main,
+  .app-content,
+  .container-fluid,
+  .container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+    margin-bottom: 1rem !important;
+    background: transparent !important;
+  }
+
+  .card-header {
+    background: transparent !important;
+    border-bottom: 2px solid #333333 !important;
+    padding: 0.5rem 0 !important;
+  }
+
+  .card-body {
+    padding: 0.5rem 0 !important;
+  }
+
+  /* Make print-only restaurant headers visible */
+  .print-only {
+    display: block !important;
+  }
+
+  .print-header {
+    border-bottom: 2px solid #000;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .print-header h2 {
+    font-size: 18pt !important;
+    font-weight: bold !important;
+    margin: 0 0 4px 0 !important;
+    color: #000 !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .print-header p {
+    font-size: 9pt !important;
+    margin: 2px 0 !important;
+    color: #444 !important;
+  }
+
+  /* Table styling for crisp paper rendering */
+  .table-responsive {
+    overflow: visible !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-top: 10px !important;
+    font-size: 10pt !important;
+    page-break-inside: auto;
+  }
+
+  table thead th {
+    background-color: #f1f5f9 !important;
+    color: #000 !important;
+    border: 1px solid #94a3b8 !important;
+    padding: 6px 8px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    font-size: 8.5pt !important;
+  }
+
+  table tbody td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 6px 8px !important;
+    color: #000 !important;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  /* Preserve badges & highlights cleanly */
+  .badge, .rms-badge {
+    border: 1px solid #333 !important;
+    background: transparent !important;
+    color: #000 !important;
+    font-size: 8pt !important;
+    padding: 2px 5px !important;
+  }
+
+  /* Printable summary cards */
+  .row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+  }
+
+  .col-sm-6, .col-md-4, .col-xl-3 {
+    flex: 1 1 auto !important;
+  }
+
+  /* Don't show URL underlines or links */
+  a {
+    color: #000 !important;
+    text-decoration: none !important;
+  }
+  a[href]:after {
+    content: "" !important;
+  }
+}
+
+/* ============================================================
+   RMS Navbar Contact Buttons (WhatsApp & Email - Icon Only)
+   ============================================================ */
+.rms-nav-contact-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 50% !important;
+  font-size: 1.15rem !important;
+  padding: 0 !important;
+  text-decoration: none !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  margin: 0 2px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+.rms-nav-contact-icon.whatsapp-icon-btn {
+  background: rgba(37, 211, 102, 0.12) !important;
+  color: #25d366 !important;
+  border: 1px solid rgba(37, 211, 102, 0.3) !important;
+}
+
+.rms-nav-contact-icon.whatsapp-icon-btn:hover {
+  background: #25d366 !important;
+  color: #ffffff !important;
+  border-color: #25d366 !important;
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4) !important;
+  transform: translateY(-2px);
+}
+
+.rms-nav-contact-icon.email-icon-btn {
+  background: rgba(79, 70, 229, 0.1) !important;
+  color: #4f46e5 !important;
+  border: 1px solid rgba(79, 70, 229, 0.25) !important;
+}
+
+.rms-nav-contact-icon.email-icon-btn:hover {
+  background: #4f46e5 !important;
+  color: #ffffff !important;
+  border-color: #4f46e5 !important;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4) !important;
+  transform: translateY(-2px);
+}
+
+.rms-nav-contact-icon:active {
+  transform: translateY(0) scale(0.96) !important;
+}
+
+
