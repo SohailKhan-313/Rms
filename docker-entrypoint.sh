@@ -46,6 +46,7 @@ if [ "$has_external_db" -eq 0 ]; then
         mysql -e "CREATE USER IF NOT EXISTS 'root'@'127.0.0.1' IDENTIFIED BY ''; GRANT ALL PRIVILEGES ON *.* TO 'root'@'127.0.0.1' WITH GRANT OPTION;" 2>/dev/null || true
         mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION; FLUSH PRIVILEGES;" 2>/dev/null || true
         mysql -e "USE \`rms\`; ALTER TABLE \`login\` MODIFY COLUMN \`facebook_id\` VARCHAR(150) NULL DEFAULT ''; ALTER TABLE \`login\` MODIFY COLUMN \`pass\` VARCHAR(255) NOT NULL;" 2>/dev/null || true
+        mysql -e "USE \`rms\`; ALTER TABLE \`orders\` MODIFY COLUMN \`status\` VARCHAR(50) NULL DEFAULT 'Completed'; ALTER TABLE \`orders\` MODIFY COLUMN \`order_status\` VARCHAR(50) NULL DEFAULT 'Completed'; ALTER TABLE \`orders\` MODIFY COLUMN \`table_id\` INT(11) NULL DEFAULT 0; ALTER TABLE \`orders\` MODIFY COLUMN \`waiter_id\` INT(11) NULL DEFAULT 0; ALTER TABLE \`orders\` MODIFY COLUMN \`total\` DECIMAL(10,2) NULL DEFAULT 0.00;" 2>/dev/null || true
 
         # Default environment variables for Apache and PHP
         export MYSQLHOST="127.0.0.1"

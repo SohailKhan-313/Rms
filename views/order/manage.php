@@ -128,7 +128,7 @@ if ($conn) {
                     </td>
                     <td>
                       <span class="badge bg-success-subtle text-success border border-success-subtle">
-                        <?= htmlspecialchars($ord['order_status']) ?>
+                        <?= htmlspecialchars(!empty($ord['order_status']) ? $ord['order_status'] : (!empty($ord['status']) ? $ord['status'] : 'Completed')) ?>
                       </span>
                     </td>
                     <td class="text-center">

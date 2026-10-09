@@ -119,18 +119,19 @@ if (isset($_GET['admin_sidebar']) && $_GET['admin_sidebar'] == '1' && !empty($_S
 
     <!-- Top Action & Meta Bar -->
     <header class="pos-header-bar">
-      <!-- Section A: Brand & Direct Navigation (Prominent on all screens, top row on mobile) -->
-      <div class="pos-header-nav-brand">
+      <!-- Section A: Brand & Direct Navigation -->
+      <div class="pos-header-left">
         <div class="pos-brand-tag">
           <i class="bi bi-shop-window text-primary"></i>
-          <span class="brand-text">POS Terminal</span>
+          <span class="brand-text d-none d-sm-inline">POS Terminal</span>
+          <span class="brand-text d-sm-none">POS</span>
         </div>
 
         <!-- Primary Top Action: Always-reachable Dashboard & Auth Navigation -->
         <div class="pos-header-nav-actions">
           <a href="/RMS/public/index.php" class="btn btn-outline-primary btn-sm fw-semibold d-inline-flex align-items-center gap-1 pos-dashboard-btn" id="posDashboardNavBtn" title="Return to Admin Dashboard">
             <i class="bi bi-speedometer2"></i>
-            <span>Dashboard</span>
+            <span class="d-none d-sm-inline">Dashboard</span>
           </a>
 
           <?php if (!empty($_SESSION['email'])): ?>
@@ -139,14 +140,14 @@ if (isset($_GET['admin_sidebar']) && $_GET['admin_sidebar'] == '1' && !empty($_S
             </a>
           <?php else: ?>
             <a href="/RMS/views/user/login.php" class="btn btn-primary btn-sm fw-semibold shadow-sm px-2" title="Sign In to Administration">
-              <i class="bi bi-box-arrow-in-right me-1"></i> Staff Login
+              <i class="bi bi-box-arrow-in-right me-1"></i> <span class="d-none d-sm-inline">Staff Login</span><span class="d-sm-none">Login</span>
             </a>
           <?php endif; ?>
         </div>
       </div>
 
-      <!-- Section B: Order Modes, Table Selectors & Utilities -->
-      <div class="pos-header-controls">
+      <!-- Section B: Order Modes & Dining Table Selectors (Centered on desktop) -->
+      <div class="pos-header-center">
         <!-- Order Type Switcher -->
         <div class="pos-order-types">
           <button type="button" class="pos-type-btn active" data-type="Dine-In">
@@ -164,7 +165,7 @@ if (isset($_GET['admin_sidebar']) && $_GET['admin_sidebar'] == '1' && !empty($_S
         </div>
 
         <!-- Floor & Table Selector Wrapper (Dine-In) -->
-        <div class="d-flex align-items-center gap-1" id="posDineInLocationWrapper">
+        <div class="pos-dinein-location-wrapper" id="posDineInLocationWrapper">
           <!-- Floor Selector -->
           <div class="pos-table-badge bg-white shadow-sm" id="posFloorSelectWrapper" title="Select Dining Floor">
             <i class="bi bi-layers-fill text-primary"></i>
@@ -195,88 +196,88 @@ if (isset($_GET['admin_sidebar']) && $_GET['admin_sidebar'] == '1' && !empty($_S
             </select>
           </div>
         </div>
+      </div>
 
-        <!-- Utilities Group -->
-        <div class="pos-header-utilities">
-          <!-- Printer Status Dropdown -->
-          <div class="dropdown" id="posPrinterStatusWrapper">
-            <button type="button" class="btn btn-sm btn-outline-success dropdown-toggle d-flex align-items-center gap-1 fw-semibold" id="posPrinterStatusBtn" data-bs-toggle="dropdown" aria-expanded="false" title="Thermal Printer Connection Status">
-              <span class="pos-printer-dot online" id="posPrinterDot"></span>
-              <i class="bi bi-printer-fill text-success" id="posPrinterIcon"></i>
-              <span class="d-none d-sm-inline" id="posPrinterStatusText">Printer: Connected</span>
-              <span class="badge bg-success-subtle text-success border border-success-subtle ms-1 d-none d-md-inline" id="posPrinterModeBadge">Preview ON</span>
-            </button>
-            <div class="dropdown-menu dropdown-menu-end shadow-lg p-3" style="min-width: 320px; z-index: 1050;">
-              <h6 class="dropdown-header px-0 text-dark fw-bold d-flex align-items-center justify-content-between mb-2">
-                <span><i class="bi bi-printer me-2 text-primary"></i>Receipt Printer Setup</span>
-                <span class="badge bg-success" id="posPrinterStatePill">Attached</span>
-              </h6>
+      <!-- Section C: Terminal Utilities & System Status -->
+      <div class="pos-header-right pos-header-utilities">
+        <!-- Printer Status Dropdown -->
+        <div class="dropdown" id="posPrinterStatusWrapper">
+          <button type="button" class="btn btn-sm btn-outline-success dropdown-toggle d-flex align-items-center gap-1 fw-semibold" id="posPrinterStatusBtn" data-bs-toggle="dropdown" aria-expanded="false" title="Thermal Printer Connection Status">
+            <span class="pos-printer-dot online" id="posPrinterDot"></span>
+            <i class="bi bi-printer-fill text-success" id="posPrinterIcon"></i>
+            <span class="d-none d-lg-inline" id="posPrinterStatusText">Printer: Connected</span>
+            <span class="badge bg-success-subtle text-success border border-success-subtle ms-1 d-none d-xl-inline" id="posPrinterModeBadge">Preview ON</span>
+          </button>
+          <div class="dropdown-menu dropdown-menu-end shadow-lg p-3" style="min-width: 300px; max-width: 320px; z-index: 1050;">
+            <h6 class="dropdown-header px-0 text-dark fw-bold d-flex align-items-center justify-content-between mb-2">
+              <span><i class="bi bi-printer me-2 text-primary"></i>Receipt Printer Setup</span>
+              <span class="badge bg-success" id="posPrinterStatePill">Attached</span>
+            </h6>
 
-              <div class="p-2 bg-light rounded border mb-2">
-                <div class="form-check form-switch mb-1">
-                  <input class="form-check-input" type="checkbox" role="switch" id="posPrinterAttachedToggle" checked>
-                  <label class="form-check-label fw-semibold" for="posPrinterAttachedToggle" id="posPrinterToggleLabel">
-                    Printer is Attached
-                  </label>
-                </div>
-                <div class="text-muted small" id="posPrinterExplainer" style="font-size: 0.78rem;">
-                  When attached: Shows on-screen receipt preview modal before printing. When not attached: Directly triggers print.
-                </div>
+            <div class="p-2 bg-light rounded border mb-2">
+              <div class="form-check form-switch mb-1">
+                <input class="form-check-input" type="checkbox" role="switch" id="posPrinterAttachedToggle" checked>
+                <label class="form-check-label fw-semibold" for="posPrinterAttachedToggle" id="posPrinterToggleLabel">
+                  Printer is Attached
+                </label>
               </div>
-
-              <div class="mb-2">
-                <label class="form-label small fw-semibold text-muted mb-1">Completion Print Action:</label>
-                <div class="form-check small mb-1">
-                  <input class="form-check-input" type="radio" name="printerRule" id="rulePreviewIfAttached" value="preview_if_attached" checked>
-                  <label class="form-check-label" for="rulePreviewIfAttached">
-                    <strong>Preview if Attached</strong> (Direct print otherwise)
-                  </label>
-                </div>
-                <div class="form-check small">
-                  <input class="form-check-input" type="radio" name="printerRule" id="ruleDirectIfAttached" value="direct_if_attached">
-                  <label class="form-check-label" for="ruleDirectIfAttached">
-                    <strong>Direct Print if Attached</strong> (Preview if not attached)
-                  </label>
-                </div>
-              </div>
-
-              <div class="d-grid gap-2 border-top pt-2 mt-2">
-                <button type="button" class="btn btn-sm btn-outline-primary fw-semibold" id="posTestPrintSlipBtn">
-                  <i class="bi bi-receipt me-1"></i> Print Test Receipt
-                </button>
+              <div class="text-muted small" id="posPrinterExplainer" style="font-size: 0.78rem;">
+                When attached: Shows on-screen receipt preview modal before printing. When not attached: Directly triggers print.
               </div>
             </div>
+
+            <div class="mb-2">
+              <label class="form-label small fw-semibold text-muted mb-1">Completion Print Action:</label>
+              <div class="form-check small mb-1">
+                <input class="form-check-input" type="radio" name="printerRule" id="rulePreviewIfAttached" value="preview_if_attached" checked>
+                <label class="form-check-label" for="rulePreviewIfAttached">
+                  <strong>Preview if Attached</strong> (Direct print otherwise)
+                </label>
+              </div>
+              <div class="form-check small">
+                <input class="form-check-input" type="radio" name="printerRule" id="ruleDirectIfAttached" value="direct_if_attached">
+                <label class="form-check-label" for="ruleDirectIfAttached">
+                  <strong>Direct Print if Attached</strong> (Preview if not attached)
+                </label>
+              </div>
+            </div>
+
+            <div class="d-grid gap-2 border-top pt-2 mt-2">
+              <button type="button" class="btn btn-sm btn-outline-primary fw-semibold" id="posTestPrintSlipBtn">
+                <i class="bi bi-receipt me-1"></i> Print Test Receipt
+              </button>
+            </div>
           </div>
-
-          <!-- Recent Orders Trigger -->
-          <button type="button" class="btn btn-outline-secondary btn-sm fw-semibold" id="posRecentOrdersBtn" title="View Recent Completed Orders">
-            <i class="bi bi-clock-history me-1"></i>
-            <span class="d-none d-md-inline">Orders</span>
-          </button>
-
-          <!-- Held Orders Trigger -->
-          <button type="button" class="btn btn-outline-warning btn-sm fw-semibold position-relative" id="posHeldOrdersListBtn" title="View Parked / Held Orders">
-            <i class="bi bi-pause-circle me-1"></i>
-            <span class="d-none d-md-inline">Held</span>
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="posHeldBadge" style="display: none;">0</span>
-          </button>
-
-          <!-- Live Clock -->
-          <div class="d-none d-xl-flex align-items-center gap-1 text-muted small fw-semibold bg-light px-2 py-1 rounded border">
-            <i class="bi bi-clock"></i>
-            <span id="posLiveClock">--:--:--</span>
-          </div>
-
-          <!-- Sound Toggle -->
-          <button type="button" class="btn btn-light btn-sm border d-none d-md-inline-flex" id="posSoundToggle" title="Toggle audio feedback">
-            <i class="bi bi-volume-up-fill text-primary"></i>
-          </button>
-
-          <!-- Fullscreen Toggle -->
-          <button type="button" class="btn btn-light btn-sm border d-none d-md-inline-flex" id="posFullscreenToggle" title="Toggle Fullscreen">
-            <i class="bi bi-arrows-fullscreen"></i>
-          </button>
         </div>
+
+        <!-- Recent Orders Trigger -->
+        <button type="button" class="btn btn-outline-secondary btn-sm fw-semibold" id="posRecentOrdersBtn" title="View Recent Completed Orders">
+          <i class="bi bi-clock-history"></i>
+          <span class="d-none d-md-inline ms-1">Orders</span>
+        </button>
+
+        <!-- Held Orders Trigger -->
+        <button type="button" class="btn btn-outline-warning btn-sm fw-semibold position-relative" id="posHeldOrdersListBtn" title="View Parked / Held Orders">
+          <i class="bi bi-pause-circle"></i>
+          <span class="d-none d-md-inline ms-1">Held</span>
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="posHeldBadge" style="display: none;">0</span>
+        </button>
+
+        <!-- Live Clock -->
+        <div class="d-none d-xl-flex align-items-center gap-1 text-muted small fw-semibold bg-light px-2 py-1 rounded border">
+          <i class="bi bi-clock"></i>
+          <span id="posLiveClock">--:--:--</span>
+        </div>
+
+        <!-- Sound Toggle -->
+        <button type="button" class="btn btn-light btn-sm border d-none d-md-inline-flex" id="posSoundToggle" title="Toggle audio feedback">
+          <i class="bi bi-volume-up-fill text-primary"></i>
+        </button>
+
+        <!-- Fullscreen Toggle -->
+        <button type="button" class="btn btn-light btn-sm border d-none d-md-inline-flex" id="posFullscreenToggle" title="Toggle Fullscreen">
+          <i class="bi bi-arrows-fullscreen"></i>
+        </button>
       </div>
     </header>
 

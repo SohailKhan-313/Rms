@@ -54,7 +54,7 @@ include_once __DIR__ . '/../layouts/sidebar.php';
               </div>
               <div class="text-end">
                 <span class="badge bg-success-subtle text-success fs-6 px-3 py-2 border border-success-subtle">
-                  <?= htmlspecialchars($order['order_status']) ?>
+                  <?= htmlspecialchars(!empty($order['order_status']) ? $order['order_status'] : (!empty($order['status']) ? $order['status'] : 'Completed')) ?>
                 </span>
                 <div class="text-muted small mt-2">Invoice #: <strong><?= htmlspecialchars($order['order_number']) ?></strong></div>
                 <div class="text-muted small"><?= date('M d, Y h:i A', strtotime($order['created_at'])) ?></div>

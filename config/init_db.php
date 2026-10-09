@@ -84,6 +84,24 @@ if ($check && $check->num_rows > 0 && !$force) {
 @$conn->query("ALTER TABLE `login` MODIFY COLUMN `email` VARCHAR(120) NOT NULL");
 @$conn->query("ALTER TABLE `login` MODIFY COLUMN `name` VARCHAR(255) NULL DEFAULT 'Staff Member'");
 
+// Ensure orders and order_items tables are flexible and compliant
+@$conn->query("ALTER TABLE `orders` MODIFY COLUMN `status` VARCHAR(50) NULL DEFAULT 'Completed'");
+@$conn->query("ALTER TABLE `orders` MODIFY COLUMN `order_status` VARCHAR(50) NULL DEFAULT 'Completed'");
+@$conn->query("ALTER TABLE `orders` MODIFY COLUMN `table_id` INT(11) NULL DEFAULT 0");
+@$conn->query("ALTER TABLE `orders` MODIFY COLUMN `waiter_id` INT(11) NULL DEFAULT 0");
+@$conn->query("ALTER TABLE `orders` MODIFY COLUMN `total` DECIMAL(10,2) NULL DEFAULT 0.00");
+@$conn->query("ALTER TABLE `orders` MODIFY COLUMN `grand_total` DECIMAL(10,2) NULL DEFAULT 0.00");
+@$conn->query("ALTER TABLE `orders` MODIFY COLUMN `subtotal` DECIMAL(10,2) NULL DEFAULT 0.00");
+@$conn->query("ALTER TABLE `orders` MODIFY COLUMN `floor_name` VARCHAR(50) NULL DEFAULT ''");
+@$conn->query("ALTER TABLE `orders` MODIFY COLUMN `table_no` VARCHAR(50) NULL DEFAULT ''");
+
+@$conn->query("ALTER TABLE `order_items` MODIFY COLUMN `product_id` INT(11) NULL DEFAULT 0");
+@$conn->query("ALTER TABLE `order_items` MODIFY COLUMN `qty` INT(11) NULL DEFAULT 1");
+@$conn->query("ALTER TABLE `order_items` MODIFY COLUMN `quantity` INT(11) NULL DEFAULT 1");
+@$conn->query("ALTER TABLE `order_items` MODIFY COLUMN `price` DECIMAL(10,2) NULL DEFAULT 0.00");
+@$conn->query("ALTER TABLE `order_items` MODIFY COLUMN `subtotal` DECIMAL(10,2) NULL DEFAULT 0.00");
+@$conn->query("ALTER TABLE `order_items` MODIFY COLUMN `total` DECIMAL(10,2) NULL DEFAULT 0.00");
+
 // Ensure default login account exists
 $loginCheck = $conn->query("SELECT COUNT(*) FROM `login` WHERE `email` = 'SOHAIL@gmail.com'");
 if (!$loginCheck || $loginCheck->fetch_row()[0] == 0) {
