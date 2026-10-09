@@ -14,7 +14,35 @@
  * 9. 'menu'         : Complete Restaurant Food & Beverage Menu
  */
 
-require_once __DIR__ . '/../../vendor/autoload.php';
+// Multi-path robust FPDF Loader
+if (!class_exists('FPDF')) {
+    if (file_exists(__DIR__ . '/../../vendor/autoload.php')) {
+        @include_once __DIR__ . '/../../vendor/autoload.php';
+    }
+}
+if (!class_exists('FPDF')) {
+    $fpdfCandidates = [
+        __DIR__ . '/../../app/libs/fpdf/fpdf.php',
+        __DIR__ . '/../../vendor/setasign/fpdf/fpdf.php',
+        '/var/www/html/app/libs/fpdf/fpdf.php',
+        '/var/www/html/vendor/setasign/fpdf/fpdf.php'
+    ];
+    foreach ($fpdfCandidates as $candidate) {
+        if (file_exists($candidate)) {
+            require_once $candidate;
+            break;
+        }
+    }
+}
+if (!class_exists('FPDF')) {
+    http_response_code(500);
+    die("<div style='font-family:sans-serif;padding:30px;max-width:600px;margin:40px auto;border:1px solid #f5c6cb;border-radius:10px;background:#f8d7da;color:#721c24;'>
+        <h3 style='margin-top:0;'>PDF Engine Error</h3>
+        <p>FPDF engine could not be initialized. Please check that <code>app/libs/fpdf/fpdf.php</code> or Composer vendor files exist.</p>
+        <a href='javascript:history.back()' style='display:inline-block;padding:8px 16px;background:#dc3545;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;'>Go Back</a>
+    </div>");
+}
+
 include_once __DIR__ . '/../../config/database.php';
 
 $format = strtolower(trim($_GET['format'] ?? 'thermal'));

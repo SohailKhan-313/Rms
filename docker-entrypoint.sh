@@ -36,7 +36,38 @@ cat <<EOF > /etc/apache2/sites-available/000-default.conf
 </VirtualHost>
 EOF
 
-# 4. Enable site and test configuration
+# 4. Enable site, environment passing, and test configuration
+a2enmod env rewrite headers alias mpm_prefork >/dev/null 2>&1 || true
+
+# Pass all environment variables to Apache mod_php
+echo "# RMS Environment Variables for Apache" > /etc/apache2/conf-available/docker-env.conf
+while IFS='=' read -r name value; do
+    if [[ ! -z "$name" && "$name" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+        escaped_val=$(printf '%s\n' "$value" | sed 's/\\/\\\\/g; s/"/\\"/g')
+        echo "SetEnv \"$name\" \"$escaped_val\"" >> /etc/apache2/conf-available/docker-env.conf
+        echo "PassEnv $name" >> /etc/apache2/conf-available/docker-env.conf
+    fi
+done < <(env)
+a2enconf docker-env >/dev/null 2>&1 || true
+
+# Dump database variables to JSON for guaranteed PHP runtime fallback
+php -r '
+    $env = [];
+    $keys = [
+        "MYSQL_URL","DATABASE_URL","MYSQL_PUBLIC_URL","DATABASE_PUBLIC_URL","MYSQL_PRIVATE_URL",
+        "MYSQLHOST","MYSQL_HOST","DB_HOST","DB_HOSTNAME","MYSQL_HOSTNAME",
+        "MYSQLPORT","MYSQL_PORT","DB_PORT",
+        "MYSQLUSER","MYSQL_USER","DB_USER","DB_USERNAME","MYSQL_USERNAME",
+        "MYSQLPASSWORD","MYSQL_PASSWORD","DB_PASSWORD","DB_PASS","MYSQL_ROOT_PASSWORD",
+        "MYSQLDATABASE","MYSQL_DATABASE","DB_NAME","DB_DATABASE","PORT"
+    ];
+    foreach ($keys as $k) {
+        $v = getenv($k);
+        if ($v !== false && $v !== "") $env[$k] = $v;
+    }
+    @file_put_contents("/var/www/html/config/.db_env.json", json_encode($env));
+' 2>/dev/null || true
+
 a2ensite 000-default.conf >/dev/null 2>&1
 apache2ctl configtest || true
 

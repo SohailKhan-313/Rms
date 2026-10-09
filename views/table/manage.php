@@ -4,7 +4,11 @@ include_once __DIR__ . '/../../config/database.php';
 include_once __DIR__ . '/../layouts/header.php';
 include_once __DIR__ . '/../layouts/sidebar.php';
 
-// Ensure tables exist
+// Initialize empty collections unconditionally
+$floors = [];
+$tables = [];
+
+// Ensure tables exist and load records if database is connected
 if ($conn) {
     $conn->query("CREATE TABLE IF NOT EXISTS `restaurant_floors` (
         `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -26,7 +30,6 @@ if ($conn) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
     // Fetch floors
-    $floors = [];
     $resF = $conn->query("SELECT f.*, COUNT(t.id) as table_count 
                           FROM `restaurant_floors` f 
                           LEFT JOIN `restaurant_tables` t ON f.id = t.floor_id 
@@ -39,7 +42,6 @@ if ($conn) {
     }
 
     // Fetch tables
-    $tables = [];
     $resT = $conn->query("SELECT t.*, f.floor_code 
                           FROM `restaurant_tables` t 
                           LEFT JOIN `restaurant_floors` f ON t.floor_id = f.id 
@@ -51,15 +53,18 @@ if ($conn) {
     }
 }
 
-// Compute statistics
-$totalTables = count($tables);
+// Compute statistics safely
+$totalTables = is_array($tables) ? count($tables) : 0;
 $availableTables = 0;
 $occupiedTables = 0;
 $reservedTables = 0;
-foreach ($tables as $t) {
-    if ($t['status'] === 'Available') $availableTables++;
-    elseif ($t['status'] === 'Occupied') $occupiedTables++;
-    elseif ($t['status'] === 'Reserved') $reservedTables++;
+if (is_array($tables)) {
+    foreach ($tables as $t) {
+        $status = $t['status'] ?? '';
+        if ($status === 'Available') $availableTables++;
+        elseif ($status === 'Occupied') $occupiedTables++;
+        elseif ($status === 'Reserved') $reservedTables++;
+    }
 }
 ?>
 
@@ -94,6 +99,14 @@ foreach ($tables as $t) {
   <!-- Main Content -->
   <div class="app-content">
     <div class="container-fluid">
+      <?php if (!$conn): ?>
+        <div class="alert alert-warning alert-dismissible fade show shadow-sm border-warning" role="alert">
+          <i class="bi bi-exclamation-triangle-fill me-2 fs-5 text-warning"></i>
+          <strong>Database Disconnected:</strong> Could not establish connection to the database. Please verify your Railway/Docker MySQL environment variables.
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      <?php endif; ?>
+
       <!-- KPI Stats Cards -->
       <div class="row g-3 mb-4">
         <div class="col-6 col-md-3">

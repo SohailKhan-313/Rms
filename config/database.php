@@ -8,12 +8,30 @@ mysqli_report(MYSQLI_REPORT_OFF);
 
 if (!function_exists('get_rms_db_env')) {
     function get_rms_db_env($keys, $default = null) {
+        static $fileEnv = null;
+        if ($fileEnv === null) {
+            $fileEnv = [];
+            $envFile = __DIR__ . '/.db_env.json';
+            if (file_exists($envFile)) {
+                $raw = @file_get_contents($envFile);
+                if ($raw) {
+                    $json = @json_decode($raw, true);
+                    if (is_array($json)) $fileEnv = $json;
+                }
+            }
+        }
+
         if (!is_array($keys)) $keys = [$keys];
         foreach ($keys as $k) {
             $val = getenv($k);
             if ($val !== false && $val !== '') return $val;
             if (isset($_ENV[$k]) && $_ENV[$k] !== '') return $_ENV[$k];
             if (isset($_SERVER[$k]) && $_SERVER[$k] !== '') return $_SERVER[$k];
+            if (isset($fileEnv[$k]) && $fileEnv[$k] !== '') return $fileEnv[$k];
+            if (function_exists('apache_getenv')) {
+                $aVal = @apache_getenv($k);
+                if ($aVal !== false && $aVal !== '') return $aVal;
+            }
         }
         return $default;
     }
@@ -22,15 +40,15 @@ if (!function_exists('get_rms_db_env')) {
 $conn = false;
 
 // 1. Check for Railway/Heroku style DATABASE_URL or MYSQL_URL
-$dbUrl = get_rms_db_env(['MYSQL_URL', 'DATABASE_URL']);
+$dbUrl = get_rms_db_env(['MYSQL_URL', 'DATABASE_URL', 'MYSQL_PUBLIC_URL', 'DATABASE_PUBLIC_URL', 'MYSQL_PRIVATE_URL']);
 if (!empty($dbUrl)) {
     $parsed = parse_url($dbUrl);
     if ($parsed && isset($parsed['host'])) {
         $host = $parsed['host'];
         $port = intval($parsed['port'] ?? 3306);
-        $user = $parsed['user'] ?? 'root';
-        $pass = $parsed['pass'] ?? '';
-        $dbname = ltrim($parsed['path'] ?? 'railway', '/');
+        $user = isset($parsed['user']) ? urldecode($parsed['user']) : 'root';
+        $pass = isset($parsed['pass']) ? urldecode($parsed['pass']) : '';
+        $dbname = ltrim(urldecode($parsed['path'] ?? 'railway'), '/');
 
         try {
             $c = @new mysqli($host, $user, $pass, $dbname, $port);
@@ -42,14 +60,14 @@ if (!empty($dbUrl)) {
     }
 }
 
-// 2. Check for individual Railway environment variables (MYSQLHOST, MYSQLPORT, etc.)
+// 2. Check for individual Railway / Docker environment variables (MYSQLHOST, MYSQLPORT, etc.)
 if (!$conn) {
-    $host = get_rms_db_env(['MYSQLHOST', 'DB_HOST', 'MYSQL_HOST']);
+    $host = get_rms_db_env(['MYSQLHOST', 'DB_HOST', 'MYSQL_HOST', 'DB_HOSTNAME', 'MYSQL_HOSTNAME']);
     if (!empty($host)) {
         $port = intval(get_rms_db_env(['MYSQLPORT', 'DB_PORT', 'MYSQL_PORT'], 3306));
-        $user = get_rms_db_env(['MYSQLUSER', 'DB_USER', 'MYSQL_USER'], 'root');
-        $pass = get_rms_db_env(['MYSQLPASSWORD', 'DB_PASSWORD', 'MYSQL_PASSWORD'], '');
-        $dbname = get_rms_db_env(['MYSQLDATABASE', 'DB_NAME', 'MYSQL_DATABASE'], 'railway');
+        $user = get_rms_db_env(['MYSQLUSER', 'DB_USER', 'MYSQL_USER', 'DB_USERNAME', 'MYSQL_USERNAME'], 'root');
+        $pass = get_rms_db_env(['MYSQLPASSWORD', 'DB_PASSWORD', 'MYSQL_PASSWORD', 'DB_PASS', 'MYSQL_ROOT_PASSWORD'], '');
+        $dbname = get_rms_db_env(['MYSQLDATABASE', 'DB_NAME', 'MYSQL_DATABASE', 'DB_DATABASE'], 'railway');
 
         try {
             $c = @new mysqli($host, $user, $pass, $dbname, $port);

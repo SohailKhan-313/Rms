@@ -5,10 +5,13 @@ Options +FollowSymLinks -Indexes
 # If root URL is requested, internally serve public/index.php without external redirect
 RewriteRule ^$ public/index.php [L]
 
+# Route any /RMS/... path seamlessly to root directory if Alias /RMS is absent
+RewriteRule ^RMS/(.*)$ $1 [QSA,L]
+
 # Ensure UTF-8 default charset
 AddDefaultCharset UTF-8
 
 # Security: Deny direct access to sensitive configuration files
-<FilesMatch "^(composer\.(json|lock)|schema\.sql|\.env|\.git.*)$">
+<FilesMatch "^(composer\.(json|lock)|schema\.sql|\.env.*|\.git.*|\.db_env\.json)$">
     Require all denied
 </FilesMatch>
