@@ -6,10 +6,19 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
+$isCli = (php_sapi_name() === 'cli');
+
+if (!$isCli) {
+    echo "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>RMS Database Setup</title>";
+    echo "<link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css'>";
+    echo "</head><body class='bg-light p-4'><div class='container' style='max-width:700px;'>";
+    echo "<div class='card shadow-sm'><div class='card-header bg-dark text-white fw-bold'>RMS Database Initializer</div><div class='card-body'><pre class='bg-dark text-success p-3 rounded' style='font-family:monospace;'>";
+}
+
 echo "==> RMS Database Initialization Starting...\n";
 
-// Retry connecting to DB up to 15 times (useful while MySQL container is starting up)
-$maxAttempts = 15;
+// Retry connecting to DB (CLI retries up to 15 times during container startup, HTTP runs 1 check)
+$maxAttempts = $isCli ? 15 : 1;
 $conn = false;
 
 for ($i = 1; $i <= $maxAttempts; $i++) {
@@ -18,25 +27,37 @@ for ($i = 1; $i <= $maxAttempts; $i++) {
         echo "==> Successfully connected to MySQL database on attempt {$i}!\n";
         break;
     }
-    echo "==> Attempt {$i}/{$maxAttempts}: MySQL not ready yet. Retrying in 2 seconds...\n";
-    sleep(2);
-}
-
-if (!$conn || $conn->connect_error) {
-    echo "==> ERROR: Could not establish MySQL connection after {$maxAttempts} attempts.\n";
-    if (php_sapi_name() === 'cli') {
-        exit(1);
-    } else {
-        die("Could not connect to database.");
+    if ($maxAttempts > 1) {
+        echo "==> Attempt {$i}/{$maxAttempts}: MySQL not ready yet. Retrying in 2 seconds...\n";
+        sleep(2);
     }
 }
 
-// Check if tables already exist
+if (!$conn || $conn->connect_error) {
+    $errMsg = rms_db_last_error();
+    echo "==> ERROR: Could not establish MySQL connection.\n";
+    echo "==> Details: {$errMsg}\n";
+    if ($isCli) {
+        exit(1);
+    } else {
+        echo "</pre><div class='alert alert-danger'><strong>Database Error:</strong> " . htmlspecialchars($errMsg) . "</div>";
+        echo "<p><a href='/RMS/public/db_check.php' class='btn btn-outline-danger'>View Diagnostic Center</a></p>";
+        echo "</div></div></div></body></html>";
+        exit;
+    }
+}
+
+// Check if tables already exist or force re-seed requested
+$force = isset($_GET['force']) || (isset($argv) && in_array('--force', $argv));
 $check = $conn->query("SHOW TABLES LIKE 'menue'");
-if ($check && $check->num_rows > 0) {
-    echo "==> Database already initialized. Checking admin account...\n";
+$tableCount = 0;
+$tblList = $conn->query("SHOW TABLES");
+if ($tblList) $tableCount = $tblList->num_rows;
+
+if ($check && $check->num_rows > 0 && !$force) {
+    echo "==> Database already initialized ({$tableCount} tables active). Checking admin account...\n";
 } else {
-    echo "==> Database is empty. Importing schema.sql...\n";
+    echo "==> Importing schema.sql...\n";
     $schemaFile = __DIR__ . '/../schema.sql';
     if (file_exists($schemaFile)) {
         $sql = file_get_contents($schemaFile);
@@ -44,7 +65,6 @@ if ($check && $check->num_rows > 0) {
         // Multi-query execution
         if ($conn->multi_query($sql)) {
             do {
-                // Free previous result
                 if ($result = $conn->store_result()) {
                     $result->free();
                 }
@@ -76,7 +96,15 @@ if (!$loginCheck || $loginCheck->fetch_row()[0] == 0) {
 }
 
 echo "==> RMS Database setup complete and ready for service!\n";
-if (php_sapi_name() !== 'cli') {
-    echo "<p style='color: green; font-weight: bold;'>Database is fully configured!</p>";
+
+if (!$isCli) {
+    echo "</pre>";
+    echo "<div class='alert alert-success'><strong>Success!</strong> Database schema is fully synced.</div>";
+    echo "<div class='d-flex gap-2'>";
+    echo "<a href='/RMS/public/index.php' class='btn btn-primary fw-bold'>Go to Dashboard</a>";
+    echo "<a href='/RMS/views/order/new.php' class='btn btn-dark fw-bold'>Launch POS Terminal</a>";
+    echo "<a href='/RMS/public/db_check.php' class='btn btn-outline-secondary'>Diagnostic Tool</a>";
+    echo "</div>";
+    echo "</div></div></div></body></html>";
 }
 ?>

@@ -58,7 +58,7 @@ if (!function_exists('rms_parse_db_url')) {
                     'pass' => $m[2] ?? '',
                     'host' => $m[3] ?? '',
                     'port' => !empty($m[4]) ? intval($m[4]) : 3306,
-                    'path' => $m[5] ?? 'railway'
+                    'path' => $m[5] ?? 'rms'
                 ];
             }
         }
@@ -70,30 +70,43 @@ if (!function_exists('rms_try_db_connect')) {
     function rms_try_db_connect($host, $user, $pass, $dbname, $port = 3306, $label = '') {
         $port = intval($port > 0 ? $port : 3306);
         $user = !empty($user) ? $user : 'root';
-        $dbname = !empty($dbname) ? $dbname : 'railway';
+        $targetDb = !empty($dbname) ? $dbname : 'rms';
 
         try {
-            $c = @new mysqli($host, $user, $pass, $dbname, $port);
+            // First connect without specifying database to verify authentication
+            $c = @new mysqli($host, $user, $pass, "", $port);
             if ($c && !$c->connect_error) {
-                $c->set_charset("utf8mb4");
-                $GLOBALS['RMS_DB_ATTEMPTS'][] = "SUCCESS: Connected to {$host}:{$port} ({$dbname}) via {$label}";
-                return $c;
-            }
+                // Ensure 'rms' or requested database is selected
+                $selected = null;
+                if (@$c->select_db('rms')) {
+                    $selected = 'rms';
+                } else {
+                    @$c->query("CREATE DATABASE IF NOT EXISTS `rms` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+                    if (@$c->select_db('rms')) {
+                        $selected = 'rms';
+                    } elseif (!empty($targetDb) && @$c->select_db($targetDb)) {
+                        $selected = $targetDb;
+                    }
+                }
 
-            $err1 = $c ? $c->connect_error : mysqli_connect_error();
-            $GLOBALS['RMS_DB_ATTEMPTS'][] = "FAILED: {$host}:{$port} ({$dbname}) via {$label}: {$err1}";
-
-            // If database does not exist yet, connect to server and create it
-            $c2 = @new mysqli($host, $user, $pass, "", $port);
-            if ($c2 && !$c2->connect_error) {
-                @$c2->query("CREATE DATABASE IF NOT EXISTS `{$dbname}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-                if (@$c2->select_db($dbname)) {
-                    $c2->set_charset("utf8mb4");
-                    $GLOBALS['RMS_DB_ATTEMPTS'][] = "SUCCESS: Created and connected to {$dbname} on {$host}:{$port} via {$label}";
-                    return $c2;
+                if ($selected) {
+                    $c->set_charset("utf8mb4");
+                    $GLOBALS['RMS_DB_ATTEMPTS'][] = "SUCCESS: Connected to {$host}:{$port} (database: {$selected}) via {$label}";
+                    return $c;
                 }
             }
-            $GLOBALS['RMS_DB_ERROR'] = "Could not connect to {$host}:{$port} ({$dbname}): {$err1}";
+
+            // Direct fallback connection to targetDb
+            $cDirect = @new mysqli($host, $user, $pass, $targetDb, $port);
+            if ($cDirect && !$cDirect->connect_error) {
+                $cDirect->set_charset("utf8mb4");
+                $GLOBALS['RMS_DB_ATTEMPTS'][] = "SUCCESS: Connected directly to {$host}:{$port} ({$targetDb}) via {$label}";
+                return $cDirect;
+            }
+
+            $err1 = $cDirect ? $cDirect->connect_error : ($c ? $c->connect_error : mysqli_connect_error());
+            $GLOBALS['RMS_DB_ATTEMPTS'][] = "FAILED: {$host}:{$port} ({$targetDb}) via {$label}: {$err1}";
+            $GLOBALS['RMS_DB_ERROR'] = "Could not connect to {$host}:{$port} ({$targetDb}): {$err1}";
         } catch (Throwable $e) {
             $GLOBALS['RMS_DB_ATTEMPTS'][] = "EXCEPTION on {$host}:{$port} via {$label}: " . $e->getMessage();
             $GLOBALS['RMS_DB_ERROR'] = "Error connecting to {$host}:{$port}: " . $e->getMessage();
@@ -113,7 +126,7 @@ if (!empty($dbUrl)) {
         $port = intval($parsed['port'] ?? 3306);
         $user = isset($parsed['user']) ? urldecode($parsed['user']) : 'root';
         $pass = isset($parsed['pass']) ? urldecode($parsed['pass']) : '';
-        $dbname = ltrim(urldecode($parsed['path'] ?? 'railway'), '/');
+        $dbname = ltrim(urldecode($parsed['path'] ?? 'rms'), '/');
         if (strpos($dbname, '?') !== false) {
             $dbname = explode('?', $dbname)[0];
         }
@@ -129,17 +142,19 @@ if (!$conn) {
         $port = intval(get_rms_db_env(['MYSQLPORT', 'DB_PORT', 'MYSQL_PORT'], 3306));
         $user = get_rms_db_env(['MYSQLUSER', 'DB_USER', 'MYSQL_USER', 'DB_USERNAME', 'MYSQL_USERNAME'], 'root');
         $pass = get_rms_db_env(['MYSQLPASSWORD', 'DB_PASSWORD', 'MYSQL_PASSWORD', 'DB_PASS', 'MYSQL_ROOT_PASSWORD'], '');
-        $dbname = get_rms_db_env(['MYSQLDATABASE', 'DB_NAME', 'MYSQL_DATABASE', 'DB_DATABASE'], 'railway');
+        $dbname = get_rms_db_env(['MYSQLDATABASE', 'DB_NAME', 'MYSQL_DATABASE', 'DB_DATABASE'], 'rms');
 
         $conn = rms_try_db_connect($host, $user, $pass, $dbname, $port, 'MYSQLHOST Env');
     }
 }
 
 // 3. Container-internal fallbacks (if running in Docker/Railway container and password or private domain is present)
-if (!$conn && (file_exists('/.dockerenv') || !empty(getenv('PORT')) || !empty(getenv('RAILWAY_ENVIRONMENT')))) {
+$isContainerEnv = (file_exists('/.dockerenv') || !empty(getenv('PORT')) || !empty(getenv('RAILWAY_ENVIRONMENT')));
+
+if (!$conn && $isContainerEnv) {
     $pass = get_rms_db_env(['MYSQLPASSWORD', 'DB_PASSWORD', 'MYSQL_PASSWORD', 'DB_PASS', 'MYSQL_ROOT_PASSWORD'], '');
     $user = get_rms_db_env(['MYSQLUSER', 'DB_USER', 'MYSQL_USER'], 'root');
-    $dbname = get_rms_db_env(['MYSQLDATABASE', 'DB_NAME', 'MYSQL_DATABASE'], 'railway');
+    $dbname = get_rms_db_env(['MYSQLDATABASE', 'DB_NAME', 'MYSQL_DATABASE'], 'rms');
     $port = intval(get_rms_db_env(['MYSQLPORT', 'DB_PORT'], 3306));
 
     $containerHosts = ['mysql.railway.internal', 'mysql', 'mariadb', 'db'];
@@ -150,10 +165,14 @@ if (!$conn && (file_exists('/.dockerenv') || !empty(getenv('PORT')) || !empty(ge
             break;
         }
     }
+
+    if (!$conn && empty($pass)) {
+        $GLOBALS['RMS_DB_ERROR'] = "Railway MySQL host was found at mysql.railway.internal:3306, but authentication failed because MYSQLPASSWORD is empty. Please link your MySQL service in Railway: RMS Web Service -> Variables -> Add Reference -> select MySQL.";
+    }
 }
 
 // 4. Fallback to Local Development (XAMPP / MariaDB multi-port 3307 / 3306)
-if (!$conn) {
+if (!$conn && !$isContainerEnv) {
     $ports = [3307, 3306];
     $username = "root";
     $password = "";

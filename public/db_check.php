@@ -8,6 +8,19 @@ include_once __DIR__ . '/../config/database.php';
 $pageTitle = "Database Diagnostic Center";
 $isDbConnected = ($conn && !$conn->connect_error);
 
+$activeDb = '';
+$tables = [];
+if ($isDbConnected) {
+    $dbRes = $conn->query("SELECT DATABASE()");
+    if ($dbRes) $activeDb = $dbRes->fetch_row()[0] ?? '';
+    $tblRes = $conn->query("SHOW TABLES");
+    if ($tblRes) {
+        while ($r = $tblRes->fetch_row()) {
+            $tables[] = $r[0];
+        }
+    }
+}
+
 // Gather environment status (mask sensitive passwords)
 $envVarsToCheck = [
     'MYSQLHOST', 'MYSQLPORT', 'MYSQLUSER', 'MYSQLDATABASE', 'MYSQL_URL',
@@ -68,7 +81,7 @@ foreach ($envVarsToCheck as $var) {
             </h4>
             <p class="mb-0 text-muted small">
               <?= $isDbConnected 
-                ? 'Host: ' . htmlspecialchars($conn->host_info) . ' | Server: ' . htmlspecialchars($conn->server_info) 
+                ? 'Connected to database <strong>' . htmlspecialchars($activeDb) . '</strong> (' . count($tables) . ' tables loaded)' 
                 : htmlspecialchars(rms_db_last_error()) ?>
             </p>
           </div>
@@ -84,7 +97,30 @@ foreach ($envVarsToCheck as $var) {
       </div>
     </div>
 
-    <?php if (!$isDbConnected): ?>
+    <?php if ($isDbConnected): ?>
+      <!-- Database & Tables Info -->
+      <div class="card card-diag mb-4 bg-white">
+        <div class="card-header bg-white fw-bold py-3 border-bottom d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-table me-2 text-success"></i>Active Schema Status (Database: <code><?= htmlspecialchars($activeDb) ?></code>)</span>
+          <a href="/RMS/config/init_db.php?force=1" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-arrow-repeat me-1"></i> Sync / Seed Schema
+          </a>
+        </div>
+        <div class="card-body p-4">
+          <p class="small text-muted mb-2">Total tables detected in database: <strong><?= count($tables) ?></strong></p>
+          <div class="d-flex flex-wrap gap-2">
+            <?php foreach ($tables as $t): ?>
+              <span class="badge bg-light text-dark border px-2 py-1"><i class="bi bi-check2 text-success me-1"></i><?= htmlspecialchars($t) ?></span>
+            <?php endforeach; ?>
+          </div>
+          <?php if (count($tables) === 0): ?>
+            <div class="alert alert-warning mt-3 mb-0">
+              <i class="bi bi-exclamation-triangle me-1"></i> Database is connected but no tables exist yet. Click the <strong>Sync / Seed Schema</strong> button above to load initial data.
+            </div>
+          <?php endif; ?>
+        </div>
+      </div>
+    <?php else: ?>
       <!-- Railway Quick-Fix Guide -->
       <div class="card card-diag mb-4 bg-white">
         <div class="card-header bg-danger-subtle text-danger fw-bold border-0 py-3">
