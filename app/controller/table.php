@@ -8,7 +8,7 @@ header('Content-Type: application/json; charset=utf-8');
 include_once __DIR__ . '/../../config/database.php';
 
 if (!$conn) {
-    echo json_encode(['success' => false, 'message' => 'Database connection failed.']);
+    echo json_encode(['success' => false, 'message' => 'Database connection failed: ' . rms_db_last_error()]);
     exit();
 }
 

@@ -100,10 +100,17 @@ if (is_array($tables)) {
   <div class="app-content">
     <div class="container-fluid">
       <?php if (!$conn): ?>
-        <div class="alert alert-warning alert-dismissible fade show shadow-sm border-warning" role="alert">
-          <i class="bi bi-exclamation-triangle-fill me-2 fs-5 text-warning"></i>
-          <strong>Database Disconnected:</strong> Could not establish connection to the database. Please verify your Railway/Docker MySQL environment variables.
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="alert alert-warning alert-dismissible fade show shadow-sm border-warning d-flex align-items-center justify-content-between flex-wrap gap-2" role="alert">
+          <div>
+            <i class="bi bi-exclamation-triangle-fill me-2 fs-5 text-warning"></i>
+            <strong>Database Disconnected:</strong> <?= htmlspecialchars(rms_db_last_error()) ?>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <a href="/RMS/public/db_check.php" class="btn btn-warning btn-sm fw-bold">
+              <i class="bi bi-wrench-adjustable me-1"></i> Diagnostic Guide
+            </a>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
         </div>
       <?php endif; ?>
 

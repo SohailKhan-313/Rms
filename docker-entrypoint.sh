@@ -39,16 +39,24 @@ EOF
 # 4. Enable site, environment passing, and test configuration
 a2enmod env rewrite headers alias mpm_prefork >/dev/null 2>&1 || true
 
-# Pass all environment variables to Apache mod_php
-echo "# RMS Environment Variables for Apache" > /etc/apache2/conf-available/docker-env.conf
-while IFS='=' read -r name value; do
-    if [[ ! -z "$name" && "$name" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
-        escaped_val=$(printf '%s\n' "$value" | sed 's/\\/\\\\/g; s/"/\\"/g')
-        echo "SetEnv \"$name\" \"$escaped_val\"" >> /etc/apache2/conf-available/docker-env.conf
-        echo "PassEnv $name" >> /etc/apache2/conf-available/docker-env.conf
-    fi
-done < <(env)
+# Pass all cloud and database environment variables to Apache mod_php
+cat <<'EOF' > /etc/apache2/conf-available/docker-env.conf
+# Pass Docker container environment variables to Apache mod_php
+PassEnv MYSQLHOST MYSQLPORT MYSQLUSER MYSQLPASSWORD MYSQLDATABASE
+PassEnv MYSQL_URL DATABASE_URL MYSQL_PUBLIC_URL DATABASE_PUBLIC_URL MYSQL_PRIVATE_URL
+PassEnv MYSQL_HOST MYSQL_PORT MYSQL_USER MYSQL_PASSWORD MYSQL_DATABASE
+PassEnv DB_HOST DB_PORT DB_USER DB_PASSWORD DB_NAME DB_HOSTNAME DB_USERNAME DB_PASS
+PassEnv PORT RAILWAY_ENVIRONMENT RAILWAY_SERVICE_NAME
+EOF
 a2enconf docker-env >/dev/null 2>&1 || true
+
+# Append variables to Apache envvars so Apache worker inherits them
+for k in MYSQLHOST MYSQLPORT MYSQLUSER MYSQLPASSWORD MYSQLDATABASE MYSQL_URL DATABASE_URL MYSQL_PUBLIC_URL DATABASE_PUBLIC_URL MYSQL_PRIVATE_URL MYSQL_HOST MYSQL_PORT MYSQL_USER MYSQL_PASSWORD MYSQL_DATABASE DB_HOST DB_PORT DB_USER DB_PASSWORD DB_NAME PORT; do
+    val="${!k}"
+    if [ -n "$val" ]; then
+        echo "export $k=\"$val\"" >> /etc/apache2/envvars
+    fi
+done
 
 # Dump database variables to JSON for guaranteed PHP runtime fallback
 php -r '
@@ -65,7 +73,8 @@ php -r '
         $v = getenv($k);
         if ($v !== false && $v !== "") $env[$k] = $v;
     }
-    @file_put_contents("/var/www/html/config/.db_env.json", json_encode($env));
+    @file_put_contents("/var/www/html/config/.db_env.json", json_encode($env, JSON_PRETTY_PRINT));
+    @chmod("/var/www/html/config/.db_env.json", 0666);
 ' 2>/dev/null || true
 
 a2ensite 000-default.conf >/dev/null 2>&1
