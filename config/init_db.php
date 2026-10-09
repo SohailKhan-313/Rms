@@ -78,6 +78,12 @@ if ($check && $check->num_rows > 0 && !$force) {
     }
 }
 
+// Ensure login table schema is flexible and compatible
+@$conn->query("ALTER TABLE `login` MODIFY COLUMN `facebook_id` VARCHAR(150) NULL DEFAULT ''");
+@$conn->query("ALTER TABLE `login` MODIFY COLUMN `pass` VARCHAR(255) NOT NULL");
+@$conn->query("ALTER TABLE `login` MODIFY COLUMN `email` VARCHAR(120) NOT NULL");
+@$conn->query("ALTER TABLE `login` MODIFY COLUMN `name` VARCHAR(255) NULL DEFAULT 'Staff Member'");
+
 // Ensure default login account exists
 $loginCheck = $conn->query("SELECT COUNT(*) FROM `login` WHERE `email` = 'SOHAIL@gmail.com'");
 if (!$loginCheck || $loginCheck->fetch_row()[0] == 0) {

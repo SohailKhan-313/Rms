@@ -25,30 +25,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
 
     if (!empty($email) && !empty($pass)) {
         if ($conn) {
-            // Auto-create login table if not exists
-            $conn->query("CREATE TABLE IF NOT EXISTS `login` (
-                `id` INT AUTO_INCREMENT PRIMARY KEY,
-                `email` VARCHAR(120) NOT NULL UNIQUE,
-                `pass` VARCHAR(255) NOT NULL,
-                `name` VARCHAR(100) DEFAULT 'Staff Member',
-                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+            // Auto-heal login table schema to guarantee compatibility
+            @$conn->query("ALTER TABLE `login` MODIFY COLUMN `facebook_id` VARCHAR(150) NULL DEFAULT ''");
+            @$conn->query("ALTER TABLE `login` MODIFY COLUMN `pass` VARCHAR(255) NOT NULL");
+            @$conn->query("ALTER TABLE `login` MODIFY COLUMN `email` VARCHAR(120) NOT NULL");
+            @$conn->query("ALTER TABLE `login` MODIFY COLUMN `name` VARCHAR(255) NULL DEFAULT 'Staff Member'");
 
             $emailSafe = mysqli_real_escape_string($conn, $email);
-            $passSafe = mysqli_real_escape_string($conn, $pass);
 
-            $sql = "SELECT * FROM `login` WHERE `email` = '$emailSafe' AND `pass` = '$passSafe' LIMIT 1";
+            // Case-insensitive & trimmed search
+            $sql = "SELECT * FROM `login` WHERE LOWER(TRIM(`email`)) = LOWER(TRIM('$emailSafe')) LIMIT 1";
             $res = mysqli_query($conn, $sql);
 
             if ($res && mysqli_num_rows($res) === 1) {
                 $user = mysqli_fetch_assoc($res);
-                $_SESSION['email'] = $user['email'];
-                $_SESSION['name'] = $user['name'] ?? 'Staff Member';
-                $_SESSION['pass'] = $pass;
-                header("Location: /RMS/public/index.php");
-                exit();
+                $storedPass = $user['pass'] ?? '';
+
+                // Match against plaintext, trimmed, bcrypt password_hash, md5, or sha1
+                $passMatch = ($pass === $storedPass)
+                    || (trim($pass) === trim($storedPass))
+                    || password_verify($pass, $storedPass)
+                    || (md5($pass) === $storedPass)
+                    || (sha1($pass) === $storedPass);
+
+                if ($passMatch) {
+                    $_SESSION['email'] = $user['email'];
+                    $_SESSION['name'] = !empty($user['name']) ? $user['name'] : 'Administrator';
+                    $_SESSION['pass'] = $pass;
+                    header("Location: /RMS/public/index.php");
+                    exit();
+                } else {
+                    $errorMsg = "Incorrect password for " . htmlspecialchars($email) . ". Please double-check your password.";
+                }
             } else {
-                $errorMsg = "Invalid email or password. Please try again or create an account.";
+                $errorMsg = "No account found for " . htmlspecialchars($email) . ". Please check the email spelling or create a new account.";
             }
         } else {
             // Demo fallback if DB is offline
@@ -185,7 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
         <div class="mb-4">
           <div class="d-flex justify-content-between align-items-center">
             <label class="form-label fw-semibold text-secondary small">Password</label>
-            <a href="#" class="small text-decoration-none text-muted" onclick="alert('Please contact system administrator to reset password.'); return false;">Forgot?</a>
+            <a href="#" class="small text-decoration-none text-muted" onclick="alert('Default password for SOHAIL@gmail.com is 123, and admin@rms.com is admin123.'); return false;">Forgot?</a>
           </div>
           <div class="input-group">
             <span class="input-group-text bg-light text-muted"><i class="bi bi-lock"></i></span>
@@ -209,7 +219,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
         </a>
       </form>
 
-      <div class="text-center mt-4 pt-3 border-top">
+      <div class="mt-3 p-2 bg-light rounded text-center small text-muted border">
+        <span class="fw-semibold text-dark">Default Logins:</span> 
+        <code>SOHAIL@gmail.com</code> (pass: <code>123</code>) or <code>admin@rms.com</code> (pass: <code>admin123</code>)
+      </div>
+
+      <div class="text-center mt-3 pt-3 border-top">
         <p class="text-muted small mb-2">Need to place or manage orders at the counter?</p>
         <a href="/RMS/views/order/new.php" class="btn btn-outline-dark btn-sm w-100 fw-semibold py-2">
           <i class="bi bi-cart3 me-1 text-primary"></i> Launch Standalone POS Terminal

@@ -140,12 +140,12 @@ DROP TABLE IF EXISTS `login`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `login` (
   `id` int(10) NOT NULL AUTO_INCREMENT,
-  `email` varchar(50) NOT NULL,
-  `pass` varchar(30) NOT NULL,
+  `email` varchar(120) NOT NULL,
+  `pass` varchar(255) NOT NULL,
   `name` varchar(255) DEFAULT NULL,
   `reset_token` varchar(150) DEFAULT NULL,
   `token_expire` datetime(6) DEFAULT NULL,
-  `facebook_id` varchar(150) NOT NULL,
+  `facebook_id` varchar(150) DEFAULT '',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
