@@ -1,7 +1,7 @@
 <?php
 /**
  * RMS Database Connection Engine
- * Seamless support for Railway Cloud Deployment, Docker containers, 
+ * Seamless support for Railway Cloud Deployment, Embedded Container MariaDB,
  * Private Networking, and Local Multi-Port XAMPP/MariaDB environments.
  */
 mysqli_report(MYSQLI_REPORT_OFF);
@@ -148,46 +148,32 @@ if (!$conn) {
     }
 }
 
-// 3. Container-internal fallbacks (if running in Docker/Railway container and password or private domain is present)
-$isContainerEnv = (file_exists('/.dockerenv') || !empty(getenv('PORT')) || !empty(getenv('RAILWAY_ENVIRONMENT')));
-
-if (!$conn && $isContainerEnv) {
-    $pass = get_rms_db_env(['MYSQLPASSWORD', 'DB_PASSWORD', 'MYSQL_PASSWORD', 'DB_PASS', 'MYSQL_ROOT_PASSWORD'], '');
-    $user = get_rms_db_env(['MYSQLUSER', 'DB_USER', 'MYSQL_USER'], 'root');
-    $dbname = get_rms_db_env(['MYSQLDATABASE', 'DB_NAME', 'MYSQL_DATABASE'], 'rms');
-    $port = intval(get_rms_db_env(['MYSQLPORT', 'DB_PORT'], 3306));
-
-    $containerHosts = ['mysql.railway.internal', 'mysql', 'mariadb', 'db'];
-    foreach ($containerHosts as $cHost) {
-        $cConn = rms_try_db_connect($cHost, $user, $pass, $dbname, $port, "Container ({$cHost})");
-        if ($cConn) {
-            $conn = $cConn;
-            break;
-        }
-    }
-
-    if (!$conn && empty($pass)) {
-        $GLOBALS['RMS_DB_ERROR'] = "Railway MySQL host was found at mysql.railway.internal:3306, but authentication failed because MYSQLPASSWORD is empty. Please link your MySQL service in Railway: RMS Web Service -> Variables -> Add Reference -> select MySQL.";
-    }
-}
-
-// 4. Fallback to Local Development (XAMPP / MariaDB multi-port 3307 / 3306)
-if (!$conn && !$isContainerEnv) {
-    $ports = [3307, 3306];
+// 3. Fallback to Embedded Container MariaDB / Local Development (127.0.0.1:3306, 3307, or Unix Socket)
+if (!$conn) {
+    $ports = [3306, 3307];
     $username = "root";
     $password = "";
     $database = "rms";
 
     foreach ($ports as $port) {
-        $localConn = rms_try_db_connect("127.0.0.1", $username, $password, $database, $port, "Localhost ({$port})");
+        $localConn = rms_try_db_connect("127.0.0.1", $username, $password, $database, $port, "Embedded/Local ({$port})");
         if ($localConn) {
             $conn = $localConn;
             break;
         }
     }
 
-    // If neither port was open, try to launch XAMPP mysqld if present on the machine
-    if (!$conn && file_exists('B:\xampp\mysql\bin\mysqld.exe')) {
+    // Try Unix domain socket (common on Linux/Docker containers)
+    if (!$conn && file_exists('/var/run/mysqld/mysqld.sock')) {
+        $localConn = rms_try_db_connect("localhost", $username, $password, $database, 3306, "Unix Socket");
+        if ($localConn) {
+            $conn = $localConn;
+        }
+    }
+
+    // If neither port was open and on Windows development, try to launch XAMPP mysqld if present on the machine
+    $isContainerEnv = (file_exists('/.dockerenv') || !empty(getenv('PORT')) || !empty(getenv('RAILWAY_ENVIRONMENT')));
+    if (!$conn && !$isContainerEnv && file_exists('B:\xampp\mysql\bin\mysqld.exe')) {
         @pclose(@popen("start /B B:\\xampp\\mysql\\bin\\mysqld.exe --defaults-file=B:\\xampp\\mysql\\bin\\my.ini --standalone", "r"));
         usleep(800000); // 800ms
         $conn = rms_try_db_connect("127.0.0.1", $username, $password, $database, 3307, "XAMPP Launch");
@@ -195,6 +181,6 @@ if (!$conn && !$isContainerEnv) {
 }
 
 if (!$conn && empty($GLOBALS['RMS_DB_ERROR'])) {
-    $GLOBALS['RMS_DB_ERROR'] = "No MySQL credentials detected. On Railway, please link your MySQL service in Web Service -> Variables.";
+    $GLOBALS['RMS_DB_ERROR'] = "Database connection could not be established. Ensure MariaDB or MySQL is running.";
 }
 ?>

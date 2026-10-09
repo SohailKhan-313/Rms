@@ -1,19 +1,74 @@
 #!/bin/bash
+set -e
 
 # Default port to 80 if PORT is not set by Railway
 PORT="${PORT:-80}"
 echo "==> [RMS] Starting RMS container on port: ${PORT}"
 
-# 1. Resolve Railway AH00534 duplicate MPM error (strictly ensure only mpm_prefork is active)
+# 1. Start embedded MariaDB if no external MySQL host or URL is provided
+has_external_db=0
+if [ -n "$MYSQL_URL" ] || [ -n "$DATABASE_URL" ] || [ -n "$MYSQLHOST" ] || [ -n "$DB_HOST" ]; then
+    has_external_db=1
+    echo "==> [RMS] External database environment detected (${MYSQLHOST:-$DB_HOST:-$MYSQL_URL}). Skipping embedded MariaDB."
+fi
+
+if [ "$has_external_db" -eq 0 ]; then
+    echo "==> [RMS] No external database configured. Starting embedded MariaDB on 127.0.0.1:3306..."
+    mkdir -p /var/run/mysqld /var/lib/mysql /var/log/mysql
+    chown -R mysql:mysql /var/run/mysqld /var/lib/mysql /var/log/mysql
+    chmod 777 /var/run/mysqld
+
+    # Initialize data directory if first run
+    if [ ! -d "/var/lib/mysql/mysql" ]; then
+        echo "==> [RMS] Initializing MariaDB data directory..."
+        mysql_install_db --user=mysql --datadir=/var/lib/mysql >/dev/null 2>&1 || mariadb-install-db --user=mysql --datadir=/var/lib/mysql >/dev/null 2>&1 || true
+    fi
+
+    # Launch mysqld daemon in background
+    echo "==> [RMS] Starting mysqld_safe daemon..."
+    /usr/bin/mysqld_safe --user=mysql --skip-name-resolve >/var/log/mysql/mysqld.log 2>&1 &
+
+    # Wait up to 25 seconds for MariaDB to become ready
+    echo "==> [RMS] Waiting for embedded MariaDB to accept connections..."
+    db_ready=0
+    for i in $(seq 1 25); do
+        if mysqladmin ping --silent 2>/dev/null || mysqladmin -h 127.0.0.1 ping --silent 2>/dev/null; then
+            db_ready=1
+            echo "==> [RMS] Embedded MariaDB is UP and ACCEPTING CONNECTIONS! (ready after ${i}s)"
+            break
+        fi
+        sleep 1
+    done
+
+    if [ "$db_ready" -eq 1 ]; then
+        # Ensure database 'rms' exists and root has full privileges locally and via 127.0.0.1
+        mysql -e "CREATE DATABASE IF NOT EXISTS \`rms\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null || true
+        mysql -e "CREATE USER IF NOT EXISTS 'root'@'127.0.0.1' IDENTIFIED BY ''; GRANT ALL PRIVILEGES ON *.* TO 'root'@'127.0.0.1' WITH GRANT OPTION;" 2>/dev/null || true
+        mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION; FLUSH PRIVILEGES;" 2>/dev/null || true
+
+        # Default environment variables for Apache and PHP
+        export MYSQLHOST="127.0.0.1"
+        export MYSQLPORT="3306"
+        export MYSQLUSER="root"
+        export MYSQLPASSWORD=""
+        export MYSQLDATABASE="rms"
+        export MYSQL_URL="mysql://root@127.0.0.1:3306/rms"
+        echo "==> [RMS] Embedded MariaDB credentials exported successfully."
+    else
+        echo "==> [RMS] Warning: MariaDB start timed out. Continuing startup..."
+    fi
+fi
+
+# 2. Resolve Railway AH00534 duplicate MPM error (strictly ensure only mpm_prefork is active)
 rm -f /etc/apache2/mods-enabled/mpm_*.load /etc/apache2/mods-enabled/mpm_*.conf 2>/dev/null || true
 a2enmod mpm_prefork >/dev/null 2>&1 || true
 
-# 2. Configure Apache to listen on $PORT
+# 3. Configure Apache to listen on $PORT
 cat <<EOF > /etc/apache2/ports.conf
 Listen ${PORT}
 EOF
 
-# 3. Configure VirtualHost for $PORT with DocumentRoot and Alias /RMS
+# 4. Configure VirtualHost for $PORT with DocumentRoot and Alias /RMS
 cat <<EOF > /etc/apache2/sites-available/000-default.conf
 <VirtualHost *:${PORT}>
     ServerAdmin webmaster@localhost
@@ -36,10 +91,9 @@ cat <<EOF > /etc/apache2/sites-available/000-default.conf
 </VirtualHost>
 EOF
 
-# 4. Enable site, environment passing, and test configuration
+# 5. Enable site, environment passing, and test configuration
 a2enmod env rewrite headers alias mpm_prefork >/dev/null 2>&1 || true
 
-# Pass all cloud and database environment variables to Apache mod_php
 cat <<'EOF' > /etc/apache2/conf-available/docker-env.conf
 # Pass Docker container environment variables to Apache mod_php
 PassEnv MYSQLHOST MYSQLPORT MYSQLUSER MYSQLPASSWORD MYSQLDATABASE
@@ -80,9 +134,9 @@ php -r '
 a2ensite 000-default.conf >/dev/null 2>&1
 apache2ctl configtest || true
 
-# 5. Trigger DB migration in background after container starts
+# 6. Trigger DB migration & schema seeder in background
 (
-    sleep 3
+    sleep 2
     php /var/www/html/config/init_db.php 2>&1 || true
 ) &
 
